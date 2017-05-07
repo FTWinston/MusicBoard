@@ -140,8 +140,8 @@
 			if (isNew)
 				editItem = document.createElement('li');
 			
-			editItem.innerText = document.getElementById('editText').value;
-			editItem.setAttribute('data-url', document.getElementById('editLink').value);
+			editItem.innerText = text;
+			editItem.setAttribute('data-url', url);
 
 			if (isNew) {
 				document.getElementById('list').appendChild(editItem);
