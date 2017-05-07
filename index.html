@@ -1,0 +1,212 @@
+<html>
+	<head>
+		<meta content="text/html; charset=utf-8" http-equiv="content-type">
+		<title>Music Board</title>
+	</head>
+	<style type="text/css">
+		body {
+			background-color: #666;
+			color: #ccc;
+		}
+		
+		body, #popup {
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			position: fixed;
+			top: 0;  bottom: 0;
+			left: 0; right: 0;
+		}
+		
+		a { color: #ccc; }
+		
+		#list {
+			overflow-y: auto;
+			padding: 0;
+			margin: 0 0 1em 0;
+			list-style-type: none;
+			
+			display: flex;
+			flex-direction: row;
+			justify-content: space-around;
+			align-content: space-around;
+			align-items: baseline;
+			flex-wrap: wrap;
+		}
+		
+		#list > li {
+			border: solid grey 0.2em;
+			border-radius: 1em;
+			padding: 1em;
+			margin: 0.75em;
+			cursor: pointer;
+		}
+		
+		#list > li:hover {
+			background-color: #ccc;
+			color: #000;
+		}
+		
+		.linkList > * {
+			display: inline-block;
+			margin-left: 1.5em;
+		}
+		
+		body.edit .view, body.view .edit, .hidden {
+			display: none !important;
+		}
+		
+		#popup {
+			background-color: rgba(0,0,0,0.4);
+			justify-content: space-around;
+			align-items: center;
+		}
+		
+		#popup .popupContent {
+			background-color: #666;
+			border: solid grey 0.2em;
+			border-radius: 1em;
+			padding: 1em;
+			width: 20em;
+		}
+		.popupContent > * {
+			display: block;
+		}
+		.popupContent > * + * {
+			margin-top: 1.5em;
+		}
+		
+		.popupContent .label {
+			display: inline-block;
+			width: 3em;
+		}
+		.popupContent input[type="text"] {
+			width: 20em;
+		}
+	</style>
+<body class="edit">
+	<ul id="list">
+	
+	</ul>
+	<div id="controls" class="linkList">
+		<span class="edit">In edit mode.</span>
+		<a class="edit" href="#" onclick="toggleMode(); return false;">Switch to View mode.</a>
+		<span class="view">In view mode.</span>
+		<a class="view" href="#" onclick="toggleMode(); return false;">Switch to Edit mode.</a>
+		<a class="edit" href="#" onclick="showEdit();">Add Item.</a>
+		<a class="edit" href="#" onclick="showUrl();">Get Link.</a>
+	</div>
+	<div id="popup" class="hidden">
+		<div id="editContent" class="popupContent hidden">
+			<label><span class="label">Text</span><input type="text" id="editText" /></label>
+			<label><span class="label">Link</span><input type="text" id="editLink" /></label>
+			<div class="linkList">
+				<a href="#" onclick="saveEdit()">Save</a>
+				<a href="#" onclick="closePopup()">Cancel</a>
+			</div>
+		</div>
+		<div id="linkContent" class="popupContent hidden">
+			<label><span class="label">Link</span><input type="text" id="showLink" readonly /></label>
+			<div>This link "saves" the current layout. Keep it somewhere, as nothing is saved online.</div>
+			<div class="linkList">
+				<a href="#" onclick="closePopup()">OK</a>
+			</div>
+		</div>
+	</div>
+	
+	<script type="text/javascript">
+		var editItem = null;
+		function toggleMode() {
+			document.body.classList.toggle('edit');
+			document.body.classList.toggle('view');
+		}
+		
+		function showEdit() {
+			document.getElementById('popup').classList.remove('hidden');
+			document.getElementById('editContent').classList.remove('hidden');
+			document.getElementById('editText').value = editItem != null ? editItem.innerText : null;
+			document.getElementById('editLink').value = editItem != null ? editItem.getAttribute('data-url') : null;
+		}
+		
+		function saveEdit() {
+			saveItem(
+				document.getElementById('editText').value,
+				document.getElementById('editLink').value
+			);
+		}
+		
+		function saveItem(text, url) {
+			var isNew = editItem == null;
+			if (isNew)
+				editItem = document.createElement('li');
+			
+			editItem.innerText = document.getElementById('editText').value;
+			editItem.setAttribute('data-url', document.getElementById('editLink').value);
+
+			if (isNew) {
+				document.getElementById('list').appendChild(editItem);
+				editItem.addEventListener('click', itemClicked);
+			}
+			closePopup();
+		}
+		
+		function closePopup() {
+			editItem = null;
+			document.getElementById('popup').classList.add('hidden');
+			document.getElementById('editContent').classList.add('hidden');
+			document.getElementById('linkContent').classList.add('hidden');
+		}
+		
+		function itemClicked() {
+			if (document.body.classList.contains('edit')) {
+				editItem = this;
+				showEdit();
+			}
+			else {
+				var url = this.getAttribute('data-url');
+				window.open(url, '_blank');
+			}
+		}
+		
+		function showUrl() {
+			var url = determineUrl();
+			document.getElementById('popup').classList.remove('hidden');
+			document.getElementById('linkContent').classList.remove('hidden');
+			
+			var output = document.getElementById('showLink');
+			output.value = url;
+			output.focus();
+			output.select();
+		}
+		
+		function determineUrl() {
+			var url = document.location.pathname + '?';
+			
+			var items = document.querySelectorAll('#list > li');
+			for (var i=0; i<items.length; i++) {
+				if (i>0)
+					url += ',';
+				var item = items[i];
+				url += item.innerText + '|' + item.getAttribute('data-url');
+			}
+			
+			return url;
+		}
+		
+		function readUrl() {
+			var items = window.location.search.substr(1);
+			if (items.length == 0)
+				return;
+				
+			toggleMode(); // flip to view mode if loading an existing page
+			
+			items = items.split(',');
+			for (var i=0; i<items.length; i++) {
+				var item = items[i].split('|');
+				addItem(item[0], item[1]);
+			}
+		}
+		readUrl();
+	</script>
+</body>
+</html>
